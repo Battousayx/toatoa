@@ -4,7 +4,7 @@ Guia para hospedar a **loja Tôa Tôa** (app + MinIO) **de graça** numa VM do
 **Oracle Cloud Infrastructure (OCI) Always Free**. Roda o `docker compose` (app + MinIO),
 com SQLite persistido em volume.
 
-> Resultado: loja em `http://SEU_IP:5099` (ou porta 80) e console MinIO em `http://SEU_IP:9001`.
+> Resultado: loja em `http://SEU_IP` (porta 80) e console MinIO em `http://SEU_IP:9001`.
 
 ---
 
@@ -26,19 +26,19 @@ com SQLite persistido em volume.
 ### a) Security List da VCN (firewall do Oracle)
 **Networking → Virtual Cloud Networks → sua VCN → Subnet → Security List → Add Ingress Rules**.
 Adicione (Source `0.0.0.0/0`, TCP):
-- `5099` (loja) — ou `80` se for usar porta padrão
+- `80` (loja)
 - `9000` (API MinIO, usada pelo navegador p/ imagens)
 - `9001` (console MinIO) — opcional, pode restringir ao seu IP
-- `443`/`80` se for usar HTTPS/domínio
+- `443` se for usar HTTPS/domínio
 
 ### b) Firewall do Ubuntu (na VM)
 As imagens Ubuntu do Oracle vêm com firewall restritivo. Na VM:
 ```bash
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 5099 -j ACCEPT
+sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
 sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 9000 -j ACCEPT
 sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 9001 -j ACCEPT
 sudo netfilter-persistent save
-# (se usar ufw em vez de iptables: sudo ufw allow 5099,9000,9001/tcp)
+# (se usar ufw em vez de iptables: sudo ufw allow 80,9000,9001/tcp)
 ```
 
 ## 3. Instalar Docker na VM
@@ -60,7 +60,7 @@ nano .env
 No `.env`, ajuste:
 ```
 PUBLIC_HOST=SEU_IP          # ex.: 159.65.10.20 (ou seu domínio)
-APP_PORT=5099               # ou 80
+APP_PORT=80                 # loja sem :porta na URL
 MINIO_USER=admin
 MINIO_PASSWORD=uma-senha-forte
 ```
@@ -75,8 +75,8 @@ docker compose logs -f app   # acompanha o boot (Ctrl+C para sair)
 ```
 
 Acesse:
-- Loja: `http://SEU_IP:5099`
-- Admin: `http://SEU_IP:5099/admin` (login seed — veja o README; **troque a senha em produção**)
+- Loja: `http://SEU_IP`
+- Admin: `http://SEU_IP/admin` (login seed — veja o README; **troque a senha em produção**)
 - Console MinIO: `http://SEU_IP:9001`
 
 Migrations e seed rodam sozinhos. Dados persistem nos volumes `toatoa-data` (SQLite) e

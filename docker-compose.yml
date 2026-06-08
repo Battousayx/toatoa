@@ -33,7 +33,7 @@ services:
       Minio__Bucket: "toatoa-vestidos"
       Minio__UseSSL: "false"
     ports:
-      - "${APP_PORT:-5099}:8080"   # loja: http://<host>:5099
+      - "${APP_PORT:-80}:8080"   # loja: http://<host> (porta 80)
     volumes:
       - toatoa-data:/app/Data   # persiste os bancos SQLite
     restart: unless-stopped
