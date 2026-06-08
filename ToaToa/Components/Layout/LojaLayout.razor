@@ -13,7 +13,7 @@
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
                        Class="d-flex d-md-none" OnClick="@(() => _drawerOpen = !_drawerOpen)" />
 
-        <MudLink Href="" Underline="Underline.None" Color="Color.Inherit">
+        <MudLink Href="/" Underline="Underline.None" Color="Color.Inherit">
             <div class="d-flex align-center" style="gap:12px;">
                 <MudImage Src="img/logo.png" Alt="Tôa Tôa Moda Festa" Height="48" Style="display:block;" />
                 <div style="width:1px; height:34px; background:#E7E1D6;"></div>
@@ -27,7 +27,7 @@
         <MudSpacer />
 
         <div class="d-none d-md-flex">
-            <MudButton Href="" Color="Color.Inherit">Início</MudButton>
+            <MudButton Href="/" Color="Color.Inherit">Início</MudButton>
             <MudButton Href="loja" Color="Color.Inherit">Loja</MudButton>
             <MudButton Href="loja?cat=festa" Color="Color.Inherit">Festa</MudButton>
             <MudButton Href="loja?cat=casual" Color="Color.Inherit">Casual</MudButton>
@@ -45,7 +45,7 @@
 
     <MudDrawer @bind-Open="_drawerOpen" Anchor="Anchor.Start" Elevation="2" Variant="DrawerVariant.Temporary">
         <MudNavMenu>
-            <MudNavLink Href="" Match="NavLinkMatch.All">Início</MudNavLink>
+            <MudNavLink Href="/" Match="NavLinkMatch.All">Início</MudNavLink>
             <MudNavLink Href="loja" Match="NavLinkMatch.Prefix">Loja</MudNavLink>
             <MudNavLink Href="loja?cat=festa">Festa</MudNavLink>
             <MudNavLink Href="loja?cat=casual">Casual</MudNavLink>
