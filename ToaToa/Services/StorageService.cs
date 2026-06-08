@@ -21,33 +21,45 @@ public class StorageService(IMinioClient client, IOptions<MinioOptions> options,
 
     public async Task EnsureBucketAsync()
     {
-        try
+        const int maxTentativas = 10;
+        for (var tentativa = 1; tentativa <= maxTentativas; tentativa++)
         {
-            var existe = await client.BucketExistsAsync(new BucketExistsArgs().WithBucket(_opt.Bucket));
-            if (!existe)
+            try
             {
-                await client.MakeBucketAsync(new MakeBucketArgs().WithBucket(_opt.Bucket));
-            }
-
-            // Política de leitura pública para servir as imagens diretamente via URL.
-            var policy = $$"""
-            {
-              "Version": "2012-10-17",
-              "Statement": [
+                var existe = await client.BucketExistsAsync(new BucketExistsArgs().WithBucket(_opt.Bucket));
+                if (!existe)
                 {
-                  "Effect": "Allow",
-                  "Principal": "*",
-                  "Action": ["s3:GetObject"],
-                  "Resource": ["arn:aws:s3:::{{_opt.Bucket}}/*"]
+                    await client.MakeBucketAsync(new MakeBucketArgs().WithBucket(_opt.Bucket));
                 }
-              ]
+
+                // Política de leitura pública para servir as imagens diretamente via URL.
+                var policy = $$"""
+                {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Principal": "*",
+                      "Action": ["s3:GetObject"],
+                      "Resource": ["arn:aws:s3:::{{_opt.Bucket}}/*"]
+                    }
+                  ]
+                }
+                """;
+                await client.SetPolicyAsync(new SetPolicyArgs().WithBucket(_opt.Bucket).WithPolicy(policy));
+                logger.LogInformation("Bucket MinIO '{Bucket}' pronto.", _opt.Bucket);
+                return;
             }
-            """;
-            await client.SetPolicyAsync(new SetPolicyArgs().WithBucket(_opt.Bucket).WithPolicy(policy));
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Não foi possível inicializar o bucket MinIO '{Bucket}'. O upload de fotos ficará indisponível até o MinIO estar acessível.", _opt.Bucket);
+            catch (Exception ex)
+            {
+                if (tentativa == maxTentativas)
+                {
+                    logger.LogWarning(ex, "Não foi possível inicializar o bucket MinIO '{Bucket}' após {N} tentativas. O upload de fotos ficará indisponível até o MinIO estar acessível.", _opt.Bucket, maxTentativas);
+                    return;
+                }
+                logger.LogInformation("MinIO ainda indisponível (tentativa {T}/{N}); aguardando...", tentativa, maxTentativas);
+                await Task.Delay(TimeSpan.FromSeconds(3));
+            }
         }
     }
 

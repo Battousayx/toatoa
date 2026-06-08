@@ -11,11 +11,32 @@ services:
       - "9001:9001"   # Console web
     volumes:
       - minio-data:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: toatoa-app
+    depends_on:
+      - minio
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "DataSource=Data/app.db;Cache=Shared"
+      ConnectionStrings__CatalogoConnection: "DataSource=Data/catalogo.db;Cache=Shared"
+      # App -> MinIO é interno (rede do compose); o navegador acessa via PublicBaseUrl.
+      Minio__Endpoint: "minio:9000"
+      Minio__PublicBaseUrl: "http://localhost:9000"   # troque pelo host/domínio público ao hospedar
+      Minio__AccessKey: "minioadmin"
+      Minio__SecretKey: "minioadmin"
+      Minio__Bucket: "toatoa-vestidos"
+      Minio__UseSSL: "false"
+    ports:
+      - "5099:8080"   # loja: http://localhost:5099
+    volumes:
+      - toatoa-data:/app/Data   # persiste os bancos SQLite
+    restart: unless-stopped
 
 volumes:
   minio-data:
+  toatoa-data:
