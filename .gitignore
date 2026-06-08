@@ -17,3 +17,6 @@ obj/
 
 # Logs / temp
 *.log
+
+# Segredos de ambiente (não versionar)
+.env

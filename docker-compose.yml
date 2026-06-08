@@ -4,8 +4,8 @@ services:
     container_name: toatoa-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: "${MINIO_USER:-minioadmin}"
+      MINIO_ROOT_PASSWORD: "${MINIO_PASSWORD:-minioadmin}"
     ports:
       - "9000:9000"   # API S3
       - "9001:9001"   # Console web
@@ -26,13 +26,14 @@ services:
       ConnectionStrings__CatalogoConnection: "DataSource=Data/catalogo.db;Cache=Shared"
       # App -> MinIO é interno (rede do compose); o navegador acessa via PublicBaseUrl.
       Minio__Endpoint: "minio:9000"
-      Minio__PublicBaseUrl: "http://localhost:9000"   # troque pelo host/domínio público ao hospedar
-      Minio__AccessKey: "minioadmin"
-      Minio__SecretKey: "minioadmin"
+      # PUBLIC_HOST = IP público ou domínio da VM (definido no .env). Default: localhost.
+      Minio__PublicBaseUrl: "http://${PUBLIC_HOST:-localhost}:9000"
+      Minio__AccessKey: "${MINIO_USER:-minioadmin}"
+      Minio__SecretKey: "${MINIO_PASSWORD:-minioadmin}"
       Minio__Bucket: "toatoa-vestidos"
       Minio__UseSSL: "false"
     ports:
-      - "5099:8080"   # loja: http://localhost:5099
+      - "${APP_PORT:-5099}:8080"   # loja: http://<host>:5099
     volumes:
       - toatoa-data:/app/Data   # persiste os bancos SQLite
     restart: unless-stopped
