@@ -1,6 +1,5 @@
-@inject NavigationManager Nav
-
-<MudCard Elevation="0" Square="true" Class="toatoa-card" Style="cursor:pointer; background:transparent;" @onclick="Abrir">
+<MudLink Href="@($"vestido/{Vestido.Slug}")" Underline="Underline.None" Color="Color.Inherit"
+         Class="toatoa-card" Style="display:block; cursor:pointer;">
     <div class="toatoa-img-wrap">
         @if (!string.IsNullOrEmpty(Vestido.ImagemUrl))
         {
@@ -14,18 +13,16 @@
             </div>
         }
     </div>
-    <MudCardContent Class="px-1 py-3">
+    <div class="px-1 py-3">
         @if (Vestido.Categoria is not null)
         {
             <MudText Typo="Typo.caption" Style="letter-spacing:.1em; text-transform:uppercase; color:#9e9e9e;">@Vestido.Categoria.Nome</MudText>
         }
         <MudText Typo="Typo.subtitle1">@Vestido.Nome</MudText>
         <MudText Typo="Typo.subtitle2" Color="Color.Secondary">@Vestido.Preco.Brl()</MudText>
-    </MudCardContent>
-</MudCard>
+    </div>
+</MudLink>
 
 @code {
     [Parameter, EditorRequired] public Vestido Vestido { get; set; } = default!;
-
-    private void Abrir() => Nav.NavigateTo($"vestido/{Vestido.Slug}");
 }
