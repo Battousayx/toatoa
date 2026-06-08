@@ -1,0 +1,110 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject CartService Cart
+@inject NavigationManager Nav
+
+<MudThemeProvider Theme="ToaToa.Theme.ToaToaTheme.Theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Color="Color.Surface" Style="border-bottom:1px solid #ECECEC;">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       Class="d-flex d-md-none" OnClick="@(() => _drawerOpen = !_drawerOpen)" />
+
+        <MudLink Href="" Underline="Underline.None" Color="Color.Inherit">
+            <MudText Typo="Typo.h5" Class="brand-title" Style="font-weight:700; letter-spacing:.18em;">TOATOA</MudText>
+        </MudLink>
+
+        <MudSpacer />
+
+        <div class="d-none d-md-flex">
+            <MudButton Href="" Color="Color.Inherit">Início</MudButton>
+            <MudButton Href="loja" Color="Color.Inherit">Loja</MudButton>
+            <MudButton Href="loja?cat=festa" Color="Color.Inherit">Festa</MudButton>
+            <MudButton Href="loja?cat=casual" Color="Color.Inherit">Casual</MudButton>
+            <MudButton Href="loja?cat=praia" Color="Color.Inherit">Praia</MudButton>
+        </div>
+
+        <MudSpacer />
+
+        <MudIconButton Icon="@Icons.Material.Filled.Search" Color="Color.Inherit" Href="loja" />
+        <MudIconButton Icon="@Icons.Material.Filled.PersonOutline" Color="Color.Inherit" Href="Account/Manage" />
+        <MudBadge Content="@Cart.TotalItens" Color="Color.Secondary" Overlap="true" Visible="@(Cart.TotalItens > 0)">
+            <MudIconButton Icon="@Icons.Material.Filled.ShoppingBag" Color="Color.Inherit" Href="carrinho" />
+        </MudBadge>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen" Anchor="Anchor.Start" Elevation="2" Variant="DrawerVariant.Temporary">
+        <MudNavMenu>
+            <MudNavLink Href="" Match="NavLinkMatch.All">Início</MudNavLink>
+            <MudNavLink Href="loja" Match="NavLinkMatch.Prefix">Loja</MudNavLink>
+            <MudNavLink Href="loja?cat=festa">Festa</MudNavLink>
+            <MudNavLink Href="loja?cat=casual">Casual</MudNavLink>
+            <MudNavLink Href="loja?cat=praia">Praia</MudNavLink>
+            <MudNavLink Href="carrinho">Carrinho</MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+
+    <MudMainContent>
+        @Body
+
+        <MudPaper Elevation="0" Square="true" Class="mt-16 py-12" Style="background:#1A1A1A; color:#fff;">
+            <MudContainer MaxWidth="MaxWidth.Large">
+                <MudGrid>
+                    <MudItem xs="12" md="4">
+                        <MudText Typo="Typo.h5" Class="brand-title mb-3" Style="color:#fff; letter-spacing:.18em;">TOATOA</MudText>
+                        <MudText Typo="Typo.body2" Style="color:#bdbdbd;">Moda feminina em vestidos. Elegância para cada ocasião.</MudText>
+                    </MudItem>
+                    <MudItem xs="6" md="2">
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Loja</MudText>
+                        <div class="d-flex flex-column">
+                            <MudLink Href="loja" Color="Color.Inherit" Style="color:#bdbdbd;">Todos os vestidos</MudLink>
+                            <MudLink Href="loja?cat=festa" Color="Color.Inherit" Style="color:#bdbdbd;">Festa</MudLink>
+                            <MudLink Href="loja?cat=casual" Color="Color.Inherit" Style="color:#bdbdbd;">Casual</MudLink>
+                            <MudLink Href="loja?cat=praia" Color="Color.Inherit" Style="color:#bdbdbd;">Praia</MudLink>
+                        </div>
+                    </MudItem>
+                    <MudItem xs="6" md="2">
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Conta</MudText>
+                        <div class="d-flex flex-column">
+                            <MudLink Href="Account/Login" Color="Color.Inherit" Style="color:#bdbdbd;">Entrar</MudLink>
+                            <MudLink Href="Account/Register" Color="Color.Inherit" Style="color:#bdbdbd;">Cadastrar</MudLink>
+                            <MudLink Href="carrinho" Color="Color.Inherit" Style="color:#bdbdbd;">Carrinho</MudLink>
+                        </div>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Newsletter</MudText>
+                        <MudText Typo="Typo.body2" Style="color:#bdbdbd;" Class="mb-2">Receba novidades e lançamentos.</MudText>
+                        <div class="d-flex gap-2">
+                            <MudTextField @bind-Value="_email" Placeholder="Seu e-mail" Variant="Variant.Outlined" Margin="Margin.Dense" Style="background:#fff;" />
+                            <MudButton Variant="Variant.Filled" Color="Color.Secondary">Assinar</MudButton>
+                        </div>
+                        <div class="mt-3">
+                            <MudIconButton Icon="@Icons.Custom.Brands.Instagram" Style="color:#fff;" />
+                            <MudIconButton Icon="@Icons.Custom.Brands.Facebook" Style="color:#fff;" />
+                        </div>
+                    </MudItem>
+                </MudGrid>
+                <MudDivider Class="my-6" Style="border-color:#333;" />
+                <MudText Typo="Typo.caption" Style="color:#9e9e9e;">© @DateTime.Now.Year ToaToa. Todos os direitos reservados.</MudText>
+            </MudContainer>
+        </MudPaper>
+    </MudMainContent>
+</MudLayout>
+
+<div id="blazor-error-ui" data-nosnippet>
+    Ocorreu um erro inesperado.
+    <a href="." class="reload">Recarregar</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    private bool _drawerOpen;
+    private string? _email;
+
+    protected override void OnInitialized() => Cart.OnChange += StateHasChanged;
+
+    public void Dispose() => Cart.OnChange -= StateHasChanged;
+}

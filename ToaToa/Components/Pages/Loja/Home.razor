@@ -1,0 +1,85 @@
+@page "/"
+@rendermode InteractiveServer
+@inject IVestidoService VestidoService
+
+<PageTitle>ToaToa · Moda feminina em vestidos</PageTitle>
+
+<!-- HERO -->
+<div style="position:relative; height:560px; overflow:hidden;">
+    <MudImage Src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1600&q=80"
+              Alt="ToaToa" ObjectFit="ObjectFit.Cover" Style="width:100%; height:560px; display:block; filter:brightness(.95);" />
+    <div class="toatoa-hero-overlay">
+        <MudText Typo="Typo.caption" Class="mb-2" Style="letter-spacing:.3em; text-transform:uppercase;">Nova coleção</MudText>
+        <MudText Typo="Typo.h2" Class="brand-title" Style="color:#fff; max-width:680px;">Vestidos para cada ocasião</MudText>
+        <MudText Typo="Typo.body1" Class="my-4" Style="max-width:540px;">Elegância atemporal, do casual ao festa.</MudText>
+        <MudButton Href="loja" Variant="Variant.Filled" Color="Color.Surface" Size="Size.Large" Class="px-8">Comprar agora</MudButton>
+    </div>
+</div>
+
+<!-- CATEGORIAS DESTAQUE -->
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-12">
+    <MudGrid Spacing="3">
+        @foreach (var cat in _categoriasDestaque)
+        {
+            <MudItem xs="12" sm="4">
+                <MudCard Elevation="0" Square="true" Style="cursor:pointer;" @onclick="@(() => Ir($"loja?cat={cat.slug}"))">
+                    <div class="toatoa-img-wrap toatoa-card">
+                        <MudImage Src="@cat.img" Alt="@cat.nome" ObjectFit="ObjectFit.Cover" Class="toatoa-card-img" Style="width:100%; height:320px; display:block;" />
+                    </div>
+                    <MudCardContent Class="text-center">
+                        <MudText Typo="Typo.h6" Class="brand-title">@cat.nome</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+</MudContainer>
+
+<!-- DESTAQUES -->
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-12">
+    <div class="text-center mb-8">
+        <MudText Typo="Typo.overline" Color="Color.Secondary" Style="letter-spacing:.2em;">Seleção especial</MudText>
+        <MudText Typo="Typo.h4" Class="brand-title">Mais desejados</MudText>
+    </div>
+
+    @if (_carregando)
+    {
+        <div class="d-flex justify-center my-8"><MudProgressCircular Indeterminate="true" /></div>
+    }
+    else
+    {
+        <MudGrid Spacing="6">
+            @foreach (var v in _destaques)
+            {
+                <MudItem xs="6" sm="4" md="3">
+                    <VestidoCard Vestido="v" />
+                </MudItem>
+            }
+        </MudGrid>
+        <div class="text-center mt-10">
+            <MudButton Href="loja" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Large" Class="px-10">Ver toda a loja</MudButton>
+        </div>
+    }
+</MudContainer>
+
+@code {
+    private bool _carregando = true;
+    private List<Vestido> _destaques = new();
+
+    private readonly (string nome, string slug, string img)[] _categoriasDestaque =
+    {
+        ("Festa", "festa", "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=80"),
+        ("Casual", "casual", "https://images.unsplash.com/photo-1495385794356-15371f348c31?auto=format&fit=crop&w=800&q=80"),
+        ("Praia", "praia", "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80")
+    };
+
+    [Inject] private NavigationManager Nav { get; set; } = default!;
+    private void Ir(string url) => Nav.NavigateTo(url);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var todos = await VestidoService.ListarAsync(somenteAtivos: true);
+        _destaques = todos.Take(8).ToList();
+        _carregando = false;
+    }
+}

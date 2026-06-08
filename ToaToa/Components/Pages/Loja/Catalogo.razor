@@ -1,0 +1,82 @@
+@page "/loja"
+@rendermode InteractiveServer
+@inject IVestidoService VestidoService
+@inject ICategoriaService CategoriaService
+
+<PageTitle>Loja · ToaToa</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-10">
+    <div class="text-center mb-8">
+        <MudText Typo="Typo.h3" Class="brand-title">@_titulo</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">@_filtrados.Count vestido(s)</MudText>
+    </div>
+
+    <div class="d-flex justify-center flex-wrap gap-2 mb-8">
+        <MudChip T="string" Color="@(string.IsNullOrEmpty(Cat) ? Color.Primary : Color.Default)"
+                 Variant="@(string.IsNullOrEmpty(Cat) ? Variant.Filled : Variant.Outlined)" OnClick="@(() => Filtrar(null))">Todos</MudChip>
+        @foreach (var c in _categorias)
+        {
+            <MudChip T="string" Color="@(Cat == c.Slug ? Color.Primary : Color.Default)"
+                     Variant="@(Cat == c.Slug ? Variant.Filled : Variant.Outlined)" OnClick="@(() => Filtrar(c.Slug))">@c.Nome</MudChip>
+        }
+    </div>
+
+    @if (_carregando)
+    {
+        <div class="d-flex justify-center my-8"><MudProgressCircular Indeterminate="true" /></div>
+    }
+    else if (_filtrados.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info" Class="mx-auto" Style="max-width:420px;">Nenhum vestido encontrado nesta categoria.</MudAlert>
+    }
+    else
+    {
+        <MudGrid Spacing="6">
+            @foreach (var v in _filtrados)
+            {
+                <MudItem xs="6" sm="4" md="3">
+                    <VestidoCard Vestido="v" />
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    [Parameter, SupplyParameterFromQuery(Name = "cat")] public string? Cat { get; set; }
+
+    private List<Vestido> _todos = new();
+    private List<Vestido> _filtrados = new();
+    private List<Categoria> _categorias = new();
+    private bool _carregando = true;
+    private string _titulo = "Loja";
+
+    [Inject] private NavigationManager Nav { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categorias = await CategoriaService.ListarAsync();
+        _todos = await VestidoService.ListarAsync(somenteAtivos: true);
+        _carregando = false;
+        Aplicar();
+    }
+
+    protected override void OnParametersSet() => Aplicar();
+
+    private void Aplicar()
+    {
+        if (string.IsNullOrEmpty(Cat))
+        {
+            _filtrados = _todos;
+            _titulo = "Todos os vestidos";
+        }
+        else
+        {
+            _filtrados = _todos.Where(v => v.Categoria?.Slug == Cat).ToList();
+            _titulo = _categorias.FirstOrDefault(c => c.Slug == Cat)?.Nome ?? "Loja";
+        }
+    }
+
+    private void Filtrar(string? slug) =>
+        Nav.NavigateTo(slug is null ? "loja" : $"loja?cat={slug}");
+}

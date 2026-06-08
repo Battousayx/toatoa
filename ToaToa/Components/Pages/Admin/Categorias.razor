@@ -1,0 +1,88 @@
+@page "/admin/categorias"
+@rendermode InteractiveServer
+@inject ICategoriaService CategoriaService
+@inject ISnackbar Snackbar
+
+<PageTitle>Categorias · Admin</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h4">Categorias</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => Abrir(new Categoria()))">Nova categoria</MudButton>
+</div>
+
+<MudTable Items="_categorias" Hover="true" Loading="_carregando" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        <MudTh>Nome</MudTh>
+        <MudTh>Slug</MudTh>
+        <MudTh Style="text-align:right">Ações</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Nome">@context.Nome</MudTd>
+        <MudTd DataLabel="Slug">@context.Slug</MudTd>
+        <MudTd Style="text-align:right">
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => Abrir(context))" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => Excluir(context))" />
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+<MudDialog @bind-Visible="_dialogAberto" Options="new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true }">
+    <TitleContent>@(_editando.Id == 0 ? "Nova categoria" : "Editar categoria")</TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudTextField @bind-Value="_editando.Nome" Label="Nome" Required="true" RequiredError="Informe o nome" Immediate="true" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _dialogAberto = false)">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Salvar">Salvar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<Categoria> _categorias = new();
+    private bool _carregando = true;
+    private bool _dialogAberto;
+    private Categoria _editando = new();
+    private MudForm _form = default!;
+
+    protected override async Task OnInitializedAsync() => await Recarregar();
+
+    private async Task Recarregar()
+    {
+        _carregando = true;
+        _categorias = await CategoriaService.ListarAsync();
+        _carregando = false;
+    }
+
+    private void Abrir(Categoria c)
+    {
+        _editando = new Categoria { Id = c.Id, Nome = c.Nome, Slug = c.Slug };
+        _dialogAberto = true;
+    }
+
+    private async Task Salvar()
+    {
+        await _form.Validate();
+        if (!_form.IsValid) return;
+
+        await CategoriaService.SalvarAsync(_editando);
+        Snackbar.Add("Categoria salva.", Severity.Success);
+        _dialogAberto = false;
+        await Recarregar();
+    }
+
+    private async Task Excluir(Categoria c)
+    {
+        try
+        {
+            await CategoriaService.ExcluirAsync(c.Id);
+            Snackbar.Add("Categoria excluída.", Severity.Success);
+            await Recarregar();
+        }
+        catch
+        {
+            Snackbar.Add("Não foi possível excluir (há vestidos vinculados?).", Severity.Error);
+        }
+    }
+}

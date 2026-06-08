@@ -1,0 +1,157 @@
+@page "/admin/pdv"
+@rendermode InteractiveServer
+@inject IVestidoService VestidoService
+@inject IVendaService VendaService
+@inject ICaixaService CaixaService
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthProvider
+
+<PageTitle>PDV · Admin</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">PDV — Ponto de Venda</MudText>
+
+@if (_carregando)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_caixa is null)
+{
+    <MudAlert Severity="Severity.Warning">
+        Nenhum caixa aberto. <MudLink Href="admin/caixa">Abra o caixa</MudLink> para registrar vendas.
+    </MudAlert>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.h6" Class="mb-3">Adicionar item</MudText>
+
+                <MudSelect T="int?" Label="Vestido" @bind-Value="_vestidoSelId" Dense="true">
+                    @foreach (var v in _vestidos)
+                    {
+                        <MudSelectItem T="int?" Value="v.Id">@v.Nome — @v.Preco.Brl()</MudSelectItem>
+                    }
+                </MudSelect>
+
+                @if (VariantesDoSelecionado is { Count: > 0 } variantes)
+                {
+                    <MudSelect T="int?" Label="Variante" @bind-Value="_varianteSelId" Dense="true" Class="mt-3">
+                        @foreach (var va in variantes)
+                        {
+                            <MudSelectItem T="int?" Value="va.Id">@va.Tamanho / @va.Cor (estoque: @va.EstoqueQtd)</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+
+                <MudNumericField @bind-Value="_qtd" Label="Quantidade" Min="1" Class="mt-3" />
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddShoppingCart" Class="mt-3" OnClick="AdicionarItem">Adicionar</MudButton>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.h6" Class="mb-3">Carrinho</MudText>
+                <MudTable Items="_carrinho" Dense="true">
+                    <HeaderContent>
+                        <MudTh>Item</MudTh>
+                        <MudTh>Qtd</MudTh>
+                        <MudTh>Unit.</MudTh>
+                        <MudTh>Subtotal</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Descricao</MudTd>
+                        <MudTd>@context.Quantidade</MudTd>
+                        <MudTd>@context.PrecoUnitario.Brl()</MudTd>
+                        <MudTd>@context.Subtotal.Brl()</MudTd>
+                        <MudTd><MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => _carrinho.Remove(context))" /></MudTd>
+                    </RowTemplate>
+                </MudTable>
+
+                <MudText Typo="Typo.h5" Class="mt-3 text-right">Total: @Total.Brl()</MudText>
+
+                <MudSelect T="FormaPagamento" Label="Forma de pagamento" @bind-Value="_forma" Class="mt-3">
+                    <MudSelectItem Value="FormaPagamento.Dinheiro">Dinheiro</MudSelectItem>
+                    <MudSelectItem Value="FormaPagamento.Cartao">Cartão</MudSelectItem>
+                    <MudSelectItem Value="FormaPagamento.Pix">Pix</MudSelectItem>
+                </MudSelect>
+
+                <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.PointOfSale"
+                           FullWidth="true" Class="mt-4" Disabled="@(_carrinho.Count == 0 || _finalizando)" OnClick="Finalizar">
+                    Finalizar venda
+                </MudButton>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private bool _carregando = true;
+    private bool _finalizando;
+    private ToaToa.Domain.Caixa? _caixa;
+    private List<Vestido> _vestidos = new();
+    private List<ItemCarrinho> _carrinho = new();
+    private int? _vestidoSelId;
+    private int? _varianteSelId;
+    private int _qtd = 1;
+    private FormaPagamento _forma = FormaPagamento.Dinheiro;
+    private string? _usuario;
+
+    private List<VarianteVestido>? VariantesDoSelecionado =>
+        _vestidos.FirstOrDefault(v => v.Id == _vestidoSelId)?.Variantes.ToList();
+
+    private decimal Total => _carrinho.Sum(i => i.Subtotal);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _caixa = await CaixaService.ObterCaixaAbertoAsync();
+        _vestidos = await VestidoService.ListarAsync(somenteAtivos: true);
+        var auth = await AuthProvider.GetAuthenticationStateAsync();
+        _usuario = auth.User.Identity?.Name;
+        _carregando = false;
+    }
+
+    private void AdicionarItem()
+    {
+        var vestido = _vestidos.FirstOrDefault(v => v.Id == _vestidoSelId);
+        var variante = vestido?.Variantes.FirstOrDefault(va => va.Id == _varianteSelId);
+        if (vestido is null || variante is null)
+        {
+            Snackbar.Add("Selecione vestido e variante.", Severity.Warning);
+            return;
+        }
+        if (_qtd < 1) { _qtd = 1; }
+
+        var desc = $"{vestido.Nome} ({variante.Tamanho}/{variante.Cor})";
+        var existente = _carrinho.FirstOrDefault(i => i.VarianteVestidoId == variante.Id);
+        if (existente is not null)
+            _carrinho[_carrinho.IndexOf(existente)] = existente with { Quantidade = existente.Quantidade + _qtd };
+        else
+            _carrinho.Add(new ItemCarrinho(variante.Id, desc, _qtd, vestido.Preco));
+
+        _qtd = 1;
+        _varianteSelId = null;
+    }
+
+    private async Task Finalizar()
+    {
+        _finalizando = true;
+        try
+        {
+            await VendaService.RegistrarVendaAsync(_carrinho, _forma, _caixa!.Id, _usuario);
+            Snackbar.Add($"Venda de {Total.Brl()} registrada!", Severity.Success);
+            _carrinho.Clear();
+            // recarrega estoque
+            _vestidos = await VestidoService.ListarAsync(somenteAtivos: true);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _finalizando = false;
+        }
+    }
+}

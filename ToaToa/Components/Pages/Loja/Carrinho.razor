@@ -1,0 +1,81 @@
+@page "/carrinho"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject CartService Cart
+@inject ISnackbar Snackbar
+
+<PageTitle>Sacola · ToaToa</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-10">
+    <MudText Typo="Typo.h3" Class="brand-title mb-6">Sua sacola</MudText>
+
+    @if (Cart.Itens.Count == 0)
+    {
+        <MudPaper Elevation="0" Class="pa-12 text-center" Style="background:#fafafa;">
+            <MudIcon Icon="@Icons.Material.Filled.ShoppingBag" Size="Size.Large" Class="mb-3" />
+            <MudText Typo="Typo.h6" Class="mb-4">Sua sacola está vazia.</MudText>
+            <MudButton Href="loja" Variant="Variant.Filled" Color="Color.Primary">Explorar a loja</MudButton>
+        </MudPaper>
+    }
+    else
+    {
+        <MudGrid Spacing="8">
+            <MudItem xs="12" md="8">
+                <MudList T="CartItem" Gutters="false">
+                    @foreach (var item in Cart.Itens)
+                    {
+                        <MudListItem T="CartItem">
+                            <div class="d-flex align-center gap-4 py-2">
+                                @if (!string.IsNullOrEmpty(item.ImagemUrl))
+                                {
+                                    <MudImage Src="@item.ImagemUrl" Width="80" Height="100" ObjectFit="ObjectFit.Cover" />
+                                }
+                                <div class="flex-grow-1">
+                                    <MudText Typo="Typo.subtitle1">@item.Nome</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@item.Tamanho / @item.Cor</MudText>
+                                    <MudText Typo="Typo.body2">@item.Preco.Brl()</MudText>
+                                </div>
+                                <MudNumericField Value="item.Quantidade" ValueChanged="@((int q) => AlterarQtd(item, q))" T="int"
+                                                 Min="1" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width:90px;" />
+                                <MudText Typo="Typo.subtitle1" Style="min-width:110px; text-align:right;">@item.Subtotal.Brl()</MudText>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => Remover(item))" />
+                            </div>
+                        </MudListItem>
+                        <MudDivider />
+                    }
+                </MudList>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="0" Class="pa-6" Style="background:#fafafa;">
+                    <MudText Typo="Typo.h6" Class="mb-4">Resumo</MudText>
+                    <div class="d-flex justify-space-between mb-2">
+                        <MudText>Itens</MudText><MudText>@Cart.TotalItens</MudText>
+                    </div>
+                    <div class="d-flex justify-space-between mb-4">
+                        <MudText Typo="Typo.h6">Total</MudText>
+                        <MudText Typo="Typo.h6" Color="Color.Secondary">@Cart.Total.Brl()</MudText>
+                    </div>
+                    <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="Finalizar">Finalizar compra</MudButton>
+                    <MudButton FullWidth="true" Variant="Variant.Text" Class="mt-2" OnClick="@(() => Cart.Limpar())">Esvaziar sacola</MudButton>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    protected override void OnInitialized() => Cart.OnChange += StateHasChanged;
+
+    public void Dispose() => Cart.OnChange -= StateHasChanged;
+
+    private void AlterarQtd(CartItem item, int q) => Cart.AlterarQuantidade(item.VarianteVestidoId, q);
+
+    private void Remover(CartItem item) => Cart.Remover(item.VarianteVestidoId);
+
+    private void Finalizar()
+    {
+        // Checkout/pagamento é escopo futuro — placeholder
+        Snackbar.Add("Checkout em breve! (pagamento será integrado numa próxima fase)", Severity.Info);
+    }
+}

@@ -1,0 +1,192 @@
+@page "/admin/vestidos/editar"
+@page "/admin/vestidos/editar/{Id:int}"
+@rendermode InteractiveServer
+@inject IVestidoService VestidoService
+@inject ICategoriaService CategoriaService
+@inject IStorageService StorageService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>@(Id is null ? "Novo vestido" : "Editar vestido") · Admin</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@(Id is null ? "Novo vestido" : "Editar vestido")</MudText>
+
+@if (_carregando)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" md="7">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudForm @ref="_form">
+                    <MudTextField @bind-Value="_vestido.Nome" Label="Nome" Required="true" RequiredError="Informe o nome" />
+                    <MudTextField @bind-Value="_vestido.Descricao" Label="Descrição" Lines="4" Class="mt-3" />
+                    <MudNumericField @bind-Value="_vestido.Preco" Label="Preço" Format="F2" Min="0" Class="mt-3" />
+                    <MudSelect @bind-Value="_vestido.CategoriaId" Label="Categoria" Required="true" RequiredError="Selecione a categoria" Class="mt-3">
+                        @foreach (var c in _categorias)
+                        {
+                            <MudSelectItem Value="c.Id">@c.Nome</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudSwitch @bind-Value="_vestido.Ativo" Label="Ativo" Color="Color.Success" Class="mt-3" />
+                </MudForm>
+
+                <MudText Typo="Typo.h6" Class="mt-6 mb-2">Variantes (tamanho / cor / estoque)</MudText>
+                <MudTable Items="_variantes" Dense="true" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Tamanho</MudTh>
+                        <MudTh>Cor</MudTh>
+                        <MudTh>Estoque</MudTh>
+                        <MudTh>SKU</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd><MudTextField @bind-Value="context.Tamanho" Margin="Margin.Dense" /></MudTd>
+                        <MudTd><MudTextField @bind-Value="context.Cor" Margin="Margin.Dense" /></MudTd>
+                        <MudTd><MudNumericField @bind-Value="context.EstoqueQtd" Margin="Margin.Dense" Min="0" /></MudTd>
+                        <MudTd><MudTextField @bind-Value="context.Sku" Margin="Margin.Dense" /></MudTd>
+                        <MudTd><MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => _variantes.Remove(context))" /></MudTd>
+                    </RowTemplate>
+                </MudTable>
+                <MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => _variantes.Add(new VarianteVestido()))" Class="mt-2">Adicionar variante</MudButton>
+
+                <div class="d-flex gap-3 mt-6">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar">Salvar</MudButton>
+                    <MudButton Variant="Variant.Outlined" Href="admin/vestidos">Voltar</MudButton>
+                </div>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="5">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.h6" Class="mb-2">Fotos</MudText>
+
+                @if (_vestido.Id == 0)
+                {
+                    <MudAlert Severity="Severity.Info">Salve o vestido para habilitar o envio de fotos.</MudAlert>
+                }
+                else
+                {
+                    <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="EnviarFotos" Accept=".png,.jpg,.jpeg,.webp" MaximumFileCount="10">
+                        <ActivatorContent>
+                            <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.CloudUpload" Disabled="_enviando">
+                                @(_enviando ? "Enviando..." : "Enviar fotos")
+                            </MudButton>
+                        </ActivatorContent>
+                    </MudFileUpload>
+
+                    <MudGrid Class="mt-3">
+                        @foreach (var foto in _fotos)
+                        {
+                            <MudItem xs="6">
+                                <MudCard>
+                                    <MudCardMedia Image="@foto.Url" Height="160" />
+                                    <MudCardActions>
+                                        <MudTooltip Text="Definir como principal">
+                                            <MudIconButton Icon="@(foto.Principal ? Icons.Material.Filled.Star : Icons.Material.Filled.StarBorder)"
+                                                           Color="@(foto.Principal ? Color.Warning : Color.Default)" Size="Size.Small"
+                                                           OnClick="@(() => DefinirPrincipal(foto.Id))" />
+                                        </MudTooltip>
+                                        <MudSpacer />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => RemoverFoto(foto))" />
+                                    </MudCardActions>
+                                </MudCard>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private Vestido _vestido = new() { Ativo = true };
+    private List<VarianteVestido> _variantes = new();
+    private List<FotoVestido> _fotos = new();
+    private List<Categoria> _categorias = new();
+    private MudForm _form = default!;
+    private bool _carregando = true;
+    private bool _enviando;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _carregando = true;
+        _categorias = await CategoriaService.ListarAsync();
+
+        if (Id is int id)
+        {
+            var v = await VestidoService.ObterAsync(id);
+            if (v is not null)
+            {
+                _vestido = v;
+                _variantes = v.Variantes.ToList();
+                _fotos = v.Fotos.OrderBy(f => f.Ordem).ToList();
+            }
+        }
+        else
+        {
+            _vestido = new Vestido { Ativo = true };
+            _variantes = new();
+            _fotos = new();
+        }
+        _carregando = false;
+    }
+
+    private async Task Salvar()
+    {
+        await _form.Validate();
+        if (!_form.IsValid) return;
+
+        var salvo = await VestidoService.SalvarAsync(_vestido, _variantes);
+        Snackbar.Add("Vestido salvo.", Severity.Success);
+
+        if (Id is null)
+        {
+            // Redireciona para a edição para habilitar o envio de fotos
+            Nav.NavigateTo($"admin/vestidos/editar/{salvo.Id}");
+        }
+    }
+
+    private async Task EnviarFotos(IReadOnlyList<IBrowserFile> arquivos)
+    {
+        if (_vestido.Id == 0) return;
+        _enviando = true;
+        try
+        {
+            foreach (var arquivo in arquivos)
+            {
+                await using var stream = arquivo.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+                var (key, url) = await StorageService.UploadAsync(stream, arquivo.Name, arquivo.ContentType);
+                await VestidoService.AdicionarFotoAsync(_vestido.Id, key, url);
+            }
+            _fotos = (await VestidoService.ObterAsync(_vestido.Id))?.Fotos.OrderBy(f => f.Ordem).ToList() ?? _fotos;
+            Snackbar.Add("Fotos enviadas ao MinIO.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Falha no upload: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _enviando = false;
+        }
+    }
+
+    private async Task DefinirPrincipal(int fotoId)
+    {
+        await VestidoService.DefinirFotoPrincipalAsync(_vestido.Id, fotoId);
+        _fotos = (await VestidoService.ObterAsync(_vestido.Id))?.Fotos.OrderBy(f => f.Ordem).ToList() ?? _fotos;
+    }
+
+    private async Task RemoverFoto(FotoVestido foto)
+    {
+        await StorageService.RemoverAsync(foto.ObjectKey);
+        await VestidoService.RemoverFotoAsync(foto.Id);
+        _fotos.Remove(foto);
+    }
+}

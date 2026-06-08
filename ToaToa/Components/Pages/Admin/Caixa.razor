@@ -1,0 +1,134 @@
+@page "/admin/caixa"
+@rendermode InteractiveServer
+@inject ICaixaService CaixaService
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthProvider
+
+<PageTitle>Caixa · Admin</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Caixa</MudText>
+
+@if (_carregando)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_caixa is null)
+{
+    <MudPaper Class="pa-4" Elevation="2" Style="max-width:480px">
+        <MudText Typo="Typo.h6" Class="mb-3">Abrir caixa</MudText>
+        <MudNumericField @bind-Value="_valorAbertura" Label="Valor de abertura (fundo de troco)" Format="F2" Min="0" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="Abrir">Abrir caixa</MudButton>
+    </MudPaper>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="2">
+                <div class="d-flex justify-space-between align-center">
+                    <MudText Typo="Typo.h6">Caixa aberto</MudText>
+                    <MudChip T="string" Color="Color.Success">Aberto</MudChip>
+                </div>
+                <MudText Typo="Typo.body2" Class="mt-2">Abertura: @_caixa.DataAbertura.ToLocalTime()</MudText>
+                <MudText Typo="Typo.body2">Fundo: @_caixa.ValorAbertura.Brl()</MudText>
+
+                <MudDivider Class="my-4" />
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Sangria / Suprimento</MudText>
+                <MudSelect T="TipoMovimentoCaixa" Label="Tipo" @bind-Value="_tipoMov" Dense="true">
+                    <MudSelectItem Value="TipoMovimentoCaixa.Sangria">Sangria (retirada)</MudSelectItem>
+                    <MudSelectItem Value="TipoMovimentoCaixa.Suprimento">Suprimento (reforço)</MudSelectItem>
+                </MudSelect>
+                <MudNumericField @bind-Value="_valorMov" Label="Valor" Format="F2" Min="0" Class="mt-2" />
+                <MudTextField @bind-Value="_motivoMov" Label="Motivo" Class="mt-2" />
+                <MudButton Variant="Variant.Outlined" Class="mt-2" OnClick="RegistrarMovimento">Registrar movimento</MudButton>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.h6" Class="mb-3">Resumo / Fechamento</MudText>
+                @if (_resumo is not null)
+                {
+                    <MudSimpleTable Dense="true" Hover="false" Style="background:transparent">
+                        <tbody>
+                            <tr><td>Fundo de abertura</td><td class="text-right">@_resumo.ValorAbertura.Brl()</td></tr>
+                            <tr><td>Vendas em dinheiro</td><td class="text-right">@_resumo.TotalDinheiro.Brl()</td></tr>
+                            <tr><td>Vendas em cartão</td><td class="text-right">@_resumo.TotalCartao.Brl()</td></tr>
+                            <tr><td>Vendas em Pix</td><td class="text-right">@_resumo.TotalPix.Brl()</td></tr>
+                            <tr><td>Suprimentos</td><td class="text-right">@_resumo.Suprimentos.Brl()</td></tr>
+                            <tr><td>Sangrias</td><td class="text-right">- @_resumo.Sangrias.Brl()</td></tr>
+                            <tr style="font-weight:bold"><td>Dinheiro esperado</td><td class="text-right">@_resumo.DinheiroEsperado.Brl()</td></tr>
+                            <tr style="font-weight:bold"><td>Total de vendas</td><td class="text-right">@_resumo.TotalVendas.Brl()</td></tr>
+                        </tbody>
+                    </MudSimpleTable>
+
+                    <MudNumericField @bind-Value="_valorContado" Label="Valor contado em dinheiro" Format="F2" Min="0" Class="mt-3" />
+                    <MudText Typo="Typo.subtitle1" Class="mt-2" Color="@(Diferenca == 0 ? Color.Default : (Diferenca > 0 ? Color.Success : Color.Error))">
+                        Diferença: @Diferenca.Brl()
+                    </MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Error" Class="mt-3" StartIcon="@Icons.Material.Filled.Lock" OnClick="Fechar">Fechar caixa</MudButton>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private bool _carregando = true;
+    private ToaToa.Domain.Caixa? _caixa;
+    private ResumoCaixa? _resumo;
+    private decimal _valorAbertura;
+    private TipoMovimentoCaixa _tipoMov = TipoMovimentoCaixa.Sangria;
+    private decimal _valorMov;
+    private string? _motivoMov;
+    private decimal _valorContado;
+    private string? _usuario;
+
+    private decimal Diferenca => _resumo is null ? 0 : _valorContado - _resumo.DinheiroEsperado;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthProvider.GetAuthenticationStateAsync();
+        _usuario = auth.User.Identity?.Name;
+        await Recarregar();
+        _carregando = false;
+    }
+
+    private async Task Recarregar()
+    {
+        _caixa = await CaixaService.ObterCaixaAbertoAsync();
+        _resumo = _caixa is null ? null : await CaixaService.ResumoAsync(_caixa.Id);
+    }
+
+    private async Task Abrir()
+    {
+        try
+        {
+            await CaixaService.AbrirCaixaAsync(_valorAbertura, _usuario);
+            Snackbar.Add("Caixa aberto.", Severity.Success);
+            await Recarregar();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task RegistrarMovimento()
+    {
+        if (_valorMov <= 0) { Snackbar.Add("Informe um valor.", Severity.Warning); return; }
+        await CaixaService.RegistrarMovimentoAsync(_caixa!.Id, _tipoMov, _valorMov, _motivoMov);
+        Snackbar.Add("Movimento registrado.", Severity.Success);
+        _valorMov = 0; _motivoMov = null;
+        await Recarregar();
+    }
+
+    private async Task Fechar()
+    {
+        try
+        {
+            var caixa = await CaixaService.FecharCaixaAsync(_caixa!.Id, _valorContado, _usuario);
+            Snackbar.Add($"Caixa fechado. Diferença: {caixa.Diferenca.Brl()}", caixa.Diferenca == 0 ? Severity.Success : Severity.Warning);
+            _valorContado = 0;
+            await Recarregar();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+}

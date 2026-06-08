@@ -1,0 +1,133 @@
+@page "/vestido/{Slug}"
+@rendermode InteractiveServer
+@inject IVestidoService VestidoService
+@inject CartService Cart
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_vestido?.Nome ?? "Vestido") · ToaToa</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-10">
+    @if (_carregando)
+    {
+        <div class="d-flex justify-center my-8"><MudProgressCircular Indeterminate="true" /></div>
+    }
+    else if (_vestido is null)
+    {
+        <MudAlert Severity="Severity.Warning">Vestido não encontrado. <MudLink Href="loja">Voltar à loja</MudLink></MudAlert>
+    }
+    else
+    {
+        <MudGrid Spacing="8">
+            <MudItem xs="12" md="6">
+                @if (_fotos.Count > 0)
+                {
+                    <MudCarousel Class="mud-width-full" Style="height:560px;" ShowArrows="true" ShowBullets="@(_fotos.Count > 1)" AutoCycle="false" TData="object">
+                        @foreach (var foto in _fotos)
+                        {
+                            <MudCarouselItem Transition="Transition.Fade">
+                                <MudImage Src="@foto.Url" Alt="@_vestido.Nome" ObjectFit="ObjectFit.Cover" Style="width:100%; height:560px;" />
+                            </MudCarouselItem>
+                        }
+                    </MudCarousel>
+                }
+                else
+                {
+                    <div class="d-flex align-center justify-center" style="height:560px; background:#f5f5f5;">
+                        <MudIcon Icon="@Icons.Material.Filled.Checkroom" Size="Size.Large" />
+                    </div>
+                }
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                @if (_vestido.Categoria is not null)
+                {
+                    <MudText Typo="Typo.overline" Color="Color.Secondary" Style="letter-spacing:.2em;">@_vestido.Categoria.Nome</MudText>
+                }
+                <MudText Typo="Typo.h3" Class="brand-title mb-2">@_vestido.Nome</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Secondary" Class="mb-4">@_vestido.Preco.Brl()</MudText>
+
+                @if (!string.IsNullOrWhiteSpace(_vestido.Descricao))
+                {
+                    <MudText Typo="Typo.body1" Class="mb-6" Style="color:#555;">@_vestido.Descricao</MudText>
+                }
+
+                @if (_variantes.Count > 0)
+                {
+                    <MudSelect T="int?" Label="Tamanho / Cor" @bind-Value="_varianteSelId" Variant="Variant.Outlined" Class="mb-4">
+                        @foreach (var va in _variantes)
+                        {
+                            <MudSelectItem T="int?" Value="va.Id" Disabled="@(va.EstoqueQtd <= 0)">
+                                @va.Tamanho / @va.Cor @(va.EstoqueQtd <= 0 ? "(esgotado)" : "")
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <div class="d-flex align-center gap-4 mb-6">
+                        <MudNumericField @bind-Value="_qtd" Label="Qtd" Min="1" Variant="Variant.Outlined" Style="max-width:110px;" />
+                        <MudButton OnClick="Adicionar" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                                   StartIcon="@Icons.Material.Filled.ShoppingBag" Class="px-8" FullWidth="true">Adicionar à sacola</MudButton>
+                    </div>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info">Sem variantes disponíveis no momento.</MudAlert>
+                }
+
+                <MudDivider Class="my-4" />
+                <MudButton Href="loja" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack">Continuar comprando</MudButton>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public string Slug { get; set; } = string.Empty;
+
+    private Vestido? _vestido;
+    private List<VarianteVestido> _variantes = new();
+    private List<FotoVestido> _fotos = new();
+    private int? _varianteSelId;
+    private int _qtd = 1;
+    private bool _carregando = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _carregando = true;
+        _vestido = await VestidoService.ObterPorSlugAsync(Slug);
+        if (_vestido is not null)
+        {
+            _variantes = _vestido.Variantes.ToList();
+            _fotos = _vestido.Fotos.OrderByDescending(f => f.Principal).ThenBy(f => f.Ordem).ToList();
+        }
+        _carregando = false;
+    }
+
+    private void Adicionar()
+    {
+        var variante = _variantes.FirstOrDefault(v => v.Id == _varianteSelId);
+        if (_vestido is null || variante is null)
+        {
+            Snackbar.Add("Selecione tamanho/cor.", Severity.Warning);
+            return;
+        }
+        if (variante.EstoqueQtd < _qtd)
+        {
+            Snackbar.Add($"Estoque insuficiente (disponível: {variante.EstoqueQtd}).", Severity.Warning);
+            return;
+        }
+
+        Cart.Adicionar(new CartItem
+        {
+            VarianteVestidoId = variante.Id,
+            VestidoId = _vestido.Id,
+            Slug = _vestido.Slug,
+            Nome = _vestido.Nome,
+            Tamanho = variante.Tamanho,
+            Cor = variante.Cor,
+            Preco = _vestido.Preco,
+            ImagemUrl = _vestido.ImagemUrl,
+            Quantidade = _qtd
+        });
+        Snackbar.Add("Adicionado à sacola!", Severity.Success);
+    }
+}

@@ -1,0 +1,74 @@
+@page "/admin"
+@rendermode InteractiveServer
+@inject IVestidoService VestidoService
+@inject ICategoriaService CategoriaService
+@inject IVendaService VendaService
+@inject ICaixaService CaixaService
+
+<PageTitle>Admin · ToaToa</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-6">Painel</MudText>
+
+@if (_carregando)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4 d-flex flex-column" Elevation="2">
+                <MudText Typo="Typo.overline">Vestidos</MudText>
+                <MudText Typo="Typo.h4">@_qtdVestidos</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4 d-flex flex-column" Elevation="2">
+                <MudText Typo="Typo.overline">Categorias</MudText>
+                <MudText Typo="Typo.h4">@_qtdCategorias</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4 d-flex flex-column" Elevation="2">
+                <MudText Typo="Typo.overline">Vendas hoje</MudText>
+                <MudText Typo="Typo.h4">@_qtdVendasHoje</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4 d-flex flex-column" Elevation="2">
+                <MudText Typo="Typo.overline">Total hoje</MudText>
+                <MudText Typo="Typo.h4">@_totalHoje.Brl()</MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudAlert Severity="@(_caixaAberto ? Severity.Success : Severity.Warning)" Class="mt-6">
+        @(_caixaAberto ? "Há um caixa aberto." : "Nenhum caixa aberto. Abra o caixa para registrar vendas no PDV.")
+    </MudAlert>
+
+    <div class="d-flex gap-4 mt-6 flex-wrap">
+        <MudButton Href="admin/vestidos" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Checkroom">Gerenciar vestidos</MudButton>
+        <MudButton Href="admin/pdv" Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.PointOfSale">Abrir PDV</MudButton>
+        <MudButton Href="admin/caixa" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.AccountBalanceWallet">Caixa</MudButton>
+    </div>
+}
+
+@code {
+    private bool _carregando = true;
+    private int _qtdVestidos;
+    private int _qtdCategorias;
+    private int _qtdVendasHoje;
+    private decimal _totalHoje;
+    private bool _caixaAberto;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _qtdVestidos = (await VestidoService.ListarAsync()).Count;
+        _qtdCategorias = (await CategoriaService.ListarAsync()).Count;
+        var vendas = await VendaService.VendasDoDiaAsync(DateTime.Now);
+        _qtdVendasHoje = vendas.Count;
+        _totalHoje = vendas.Sum(v => v.Total);
+        _caixaAberto = await CaixaService.ObterCaixaAbertoAsync() is not null;
+        _carregando = false;
+    }
+}

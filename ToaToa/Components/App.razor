@@ -1,0 +1,48 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <ResourcePreloader />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" />
+    <link rel="stylesheet" href="@Assets["ToaToa.styles.css"]" />
+    <style>
+        h1,h2,h3,h4,h5,h6,
+        .mud-typography-h1,.mud-typography-h2,.mud-typography-h3,
+        .mud-typography-h4,.mud-typography-h5,.mud-typography-h6,
+        .brand-title { font-family: 'Playfair Display', Georgia, serif !important; }
+        .toatoa-announcement { letter-spacing: .12em; text-transform: uppercase; font-size: .72rem; }
+        .toatoa-hero-overlay { position:absolute; inset:0; display:flex; flex-direction:column;
+            align-items:center; justify-content:center; text-align:center; color:#fff;
+            background:linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.35)); padding:1rem; }
+        .toatoa-card-img { transition: transform .6s ease; }
+        .toatoa-card:hover .toatoa-card-img { transform: scale(1.06); }
+        .toatoa-card .toatoa-img-wrap { overflow:hidden; }
+    </style>
+    <ImportMap />
+    <link rel="icon" type="image/ico" href="favicon.ico" />
+    <HeadOutlet @rendermode="PageRenderMode" />
+</head>
+
+<body>
+    <Routes @rendermode="PageRenderMode" />
+    <ReconnectModal />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="@Assets["_content/MudBlazor/MudBlazor.min.js"]"></script>
+    <script src="@Assets["Components/Account/Shared/PasskeySubmit.razor.js"]" type="module"></script>
+</body>
+
+</html>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    private IComponentRenderMode? PageRenderMode =>
+        HttpContext.AcceptsInteractiveRouting() ? InteractiveAuto : null;
+}

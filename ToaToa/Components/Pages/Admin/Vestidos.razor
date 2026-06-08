@@ -1,0 +1,75 @@
+@page "/admin/vestidos"
+@rendermode InteractiveServer
+@inject IVestidoService VestidoService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>Vestidos · Admin</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h4">Vestidos</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Href="admin/vestidos/editar">Novo vestido</MudButton>
+</div>
+
+<MudTable Items="_vestidos" Hover="true" Loading="_carregando" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        <MudTh>Foto</MudTh>
+        <MudTh>Nome</MudTh>
+        <MudTh>Categoria</MudTh>
+        <MudTh>Preço</MudTh>
+        <MudTh>Estoque</MudTh>
+        <MudTh>Ativo</MudTh>
+        <MudTh Style="text-align:right">Ações</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>
+            @if (!string.IsNullOrEmpty(context.ImagemUrl))
+            {
+                <MudAvatar Rounded="true"><MudImage Src="@context.ImagemUrl" /></MudAvatar>
+            }
+            else
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Checkroom" />
+            }
+        </MudTd>
+        <MudTd DataLabel="Nome">@context.Nome</MudTd>
+        <MudTd DataLabel="Categoria">@context.Categoria?.Nome</MudTd>
+        <MudTd DataLabel="Preço">@context.Preco.Brl()</MudTd>
+        <MudTd DataLabel="Estoque">@context.Variantes.Sum(v => v.EstoqueQtd)</MudTd>
+        <MudTd DataLabel="Ativo">
+            <MudChip T="string" Size="Size.Small" Color="@(context.Ativo ? Color.Success : Color.Default)">@(context.Ativo ? "Sim" : "Não")</MudChip>
+        </MudTd>
+        <MudTd Style="text-align:right">
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Href="@($"admin/vestidos/editar/{context.Id}")" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => Excluir(context))" />
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    private List<Vestido> _vestidos = new();
+    private bool _carregando = true;
+
+    protected override async Task OnInitializedAsync() => await Recarregar();
+
+    private async Task Recarregar()
+    {
+        _carregando = true;
+        _vestidos = await VestidoService.ListarAsync();
+        _carregando = false;
+    }
+
+    private async Task Excluir(Vestido v)
+    {
+        try
+        {
+            await VestidoService.ExcluirAsync(v.Id);
+            Snackbar.Add("Vestido excluído.", Severity.Success);
+            await Recarregar();
+        }
+        catch
+        {
+            Snackbar.Add("Não foi possível excluir o vestido.", Severity.Error);
+        }
+    }
+}

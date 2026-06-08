@@ -1,0 +1,74 @@
+@page "/admin/vendas-do-dia"
+@rendermode InteractiveServer
+@inject IVendaService VendaService
+
+<PageTitle>Vendas do dia · Admin</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-4 flex-wrap gap-3">
+    <MudText Typo="Typo.h4">Vendas do dia</MudText>
+    <MudDatePicker Label="Data" Date="_data" DateChanged="OnDataChanged" Style="max-width:220px" />
+</div>
+
+@if (_carregando)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudGrid Class="mb-4">
+        <MudItem xs="6" md="3">
+            <MudPaper Class="pa-4" Elevation="2"><MudText Typo="Typo.overline">Qtd vendas</MudText><MudText Typo="Typo.h5">@_vendas.Count</MudText></MudPaper>
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <MudPaper Class="pa-4" Elevation="2"><MudText Typo="Typo.overline">Dinheiro</MudText><MudText Typo="Typo.h6">@TotalPor(FormaPagamento.Dinheiro).Brl()</MudText></MudPaper>
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <MudPaper Class="pa-4" Elevation="2"><MudText Typo="Typo.overline">Cartão</MudText><MudText Typo="Typo.h6">@TotalPor(FormaPagamento.Cartao).Brl()</MudText></MudPaper>
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <MudPaper Class="pa-4" Elevation="2"><MudText Typo="Typo.overline">Pix</MudText><MudText Typo="Typo.h6">@TotalPor(FormaPagamento.Pix).Brl()</MudText></MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudText Typo="Typo.h6" Class="mb-2 text-right">Total do dia: @_vendas.Sum(v => v.Total).Brl()</MudText>
+
+    <MudTable Items="_vendas" Hover="true" Breakpoint="Breakpoint.Sm">
+        <HeaderContent>
+            <MudTh>Hora</MudTh>
+            <MudTh>Itens</MudTh>
+            <MudTh>Forma</MudTh>
+            <MudTh>Usuário</MudTh>
+            <MudTh Style="text-align:right">Total</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Hora">@context.DataHora.ToLocalTime().ToString("HH:mm")</MudTd>
+            <MudTd DataLabel="Itens">@context.Itens.Sum(i => i.Quantidade)</MudTd>
+            <MudTd DataLabel="Forma">@context.FormaPagamento</MudTd>
+            <MudTd DataLabel="Usuário">@context.Usuario</MudTd>
+            <MudTd DataLabel="Total" Style="text-align:right">@context.Total.Brl()</MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private DateTime? _data = DateTime.Today;
+    private List<Venda> _vendas = new();
+    private bool _carregando = true;
+
+    protected override async Task OnInitializedAsync() => await Recarregar();
+
+    private async Task OnDataChanged(DateTime? d)
+    {
+        _data = d;
+        await Recarregar();
+    }
+
+    private async Task Recarregar()
+    {
+        _carregando = true;
+        _vendas = await VendaService.VendasDoDiaAsync(_data ?? DateTime.Today);
+        _carregando = false;
+    }
+
+    private decimal TotalPor(FormaPagamento forma) => _vendas.Where(v => v.FormaPagamento == forma).Sum(v => v.Total);
+}
