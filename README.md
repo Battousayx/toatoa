@@ -29,27 +29,37 @@ E-commerce de **vestidos** em **Blazor (.NET 10)** com **MudBlazor**, contendo l
 
 ## Como rodar
 
-### Pré-requisitos
-- .NET 10 SDK
-- Docker (para o MinIO)
+### Opção A — Standalone com Docker Compose (recomendado)
 
-> **Nota (ICU/globalização):** se a máquina não tiver `libicu`, rode em invariant mode com
-> `export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`. A formatação de R$ é feita por
-> `MoneyHelper.Brl()` e funciona mesmo assim. Para globalização nativa, instale `libicu`.
+Sobe a **aplicação + MinIO** juntos, com um comando só:
 
-### 1. Subir o MinIO
 ```bash
-docker compose up -d
-# Console: http://localhost:9001  (usuário/senha: minioadmin / minioadmin)
+docker compose up -d --build
 ```
 
-### 2. Rodar a aplicação
+- Loja: http://localhost:5099
+- Console MinIO: http://localhost:9001 (minioadmin / minioadmin)
+
+Migrations e seed (role Admin, usuário e dados de exemplo) rodam no startup. Os bancos
+SQLite e os arquivos do MinIO persistem em volumes (`toatoa-data`, `minio-data`).
+
+> **Hospedando fora do localhost:** as imagens dos vestidos são servidas pelo MinIO
+> direto ao navegador. Ajuste `Minio__PublicBaseUrl` no `docker-compose.yml` para o
+> host/domínio público (ex.: `https://cdn.seudominio.com`) e exponha a porta 9000.
+
+### Opção B — Desenvolvimento local (.NET SDK)
+
+Pré-requisitos: .NET 10 SDK + Docker (só para o MinIO).
+
 ```bash
+docker compose up -d minio                 # só o MinIO
 cd ToaToa
 dotnet run --no-launch-profile --urls "http://localhost:5099"
 ```
 
-As migrations e o seed (role Admin, usuário e dados de exemplo) rodam automaticamente no startup.
+> **Nota (ICU/globalização):** se a máquina não tiver `libicu`, rode em invariant mode com
+> `export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`. A formatação de R$ é feita por
+> `MoneyHelper.Brl()` e funciona mesmo assim. (No container Docker a `libicu` já existe.)
 
 ### Acesso
 - Loja: http://localhost:5099/
