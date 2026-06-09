@@ -10,8 +10,8 @@
 
 <MudLayout>
     <MudAppBar Elevation="0" Color="Color.Surface" Style="border-bottom:1px solid #ECECEC;">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
-                       Class="d-flex d-md-none" OnClick="@(() => _drawerOpen = !_drawerOpen)" />
+        <MudStaticNavDrawerToggle DrawerId="toatoa-nav-drawer" Class="d-flex d-md-none"
+                                  Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" />
 
         <MudLink Href="/" Underline="Underline.None" Color="Color.Inherit">
             <div class="d-flex align-center" style="gap:12px;">
@@ -43,7 +43,7 @@
         </MudBadge>
     </MudAppBar>
 
-    <MudDrawer @bind-Open="_drawerOpen" Anchor="Anchor.Start" Elevation="2" Variant="DrawerVariant.Temporary">
+    <MudDrawer id="toatoa-nav-drawer" @bind-Open="_drawerOpen" Anchor="Anchor.Start" Elevation="2" Variant="DrawerVariant.Temporary">
         <MudNavMenu>
             <MudNavLink Href="/" Match="NavLinkMatch.All">Início</MudNavLink>
             <MudNavLink Href="loja" Match="NavLinkMatch.Prefix">Loja</MudNavLink>

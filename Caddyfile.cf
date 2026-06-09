@@ -1,0 +1,14 @@
+# Caddy em modo HTTP (porta 80) para uso ATRÁS do Cloudflare (SSL/TLS = Flexible).
+# O Cloudflare faz o TLS com o navegador; aqui só roteamos por host, sem certificado local.
+# Domínios vêm do .env (DOMAIN e CDN_DOMAIN).
+
+http://{$DOMAIN} {
+    encode zstd gzip
+    reverse_proxy app:8080
+}
+
+# Subdomínio que serve as imagens do MinIO (via Cloudflare vira https://cdn...).
+http://{$CDN_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy minio:9000
+}

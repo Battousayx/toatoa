@@ -1,0 +1,31 @@
+# Override para uso ATRÁS do Cloudflare (proxied, SSL/TLS = Flexible).
+# Caddy roteia por host na porta 80 (HTTP); o Cloudflare provê o HTTPS.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.cf.yml up -d --build
+#
+# Pré-requisitos no .env:
+#   APP_PORT=8080            (app publica em 8080; a porta 80 fica para o Caddy)
+#   DOMAIN=toatoafesta.com
+#   CDN_DOMAIN=cdn.toatoafesta.com
+# DNS no Cloudflare: DOMAIN e CDN_DOMAIN -> IP da VM (Proxied). SSL/TLS = Flexible.
+
+services:
+  app:
+    environment:
+      # Loja servida via HTTPS (Cloudflare) -> imagens também via HTTPS no subdomínio CDN.
+      Minio__PublicBaseUrl: "https://${CDN_DOMAIN}"
+
+  caddy:
+    image: caddy:2
+    container_name: toatoa-caddy
+    depends_on:
+      - app
+      - minio
+    environment:
+      DOMAIN: "${DOMAIN}"
+      CDN_DOMAIN: "${CDN_DOMAIN}"
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile.cf:/etc/caddy/Caddyfile:ro
+    restart: unless-stopped
