@@ -90,23 +90,32 @@ cd ~/toatoa && git pull && docker compose up -d --build
 
 ---
 
-## (Opcional) HTTPS com domínio — Caddy
+## (Opcional) HTTPS com domínio — Caddy (já incluído)
 
-Se tiver um domínio apontando para o IP da VM, dá pra ter **HTTPS automático** (Let's Encrypt)
-adicionando um Caddy na frente. Resumo:
+O repo já traz **`Caddyfile`** + **`docker-compose.tls.yml`** prontos. O Caddy emite
+certificados **Let's Encrypt automaticamente** e serve a loja e as imagens do MinIO em HTTPS
+(o subdomínio CDN evita *mixed content*).
 
-1. Aponte um registro **A** do domínio para o IP da VM; abra `80` e `443` (VCN + iptables).
-2. Crie um `Caddyfile`:
-   ```
-   loja.seudominio.com {
-       reverse_proxy app:8080
-   }
-   ```
-3. Adicione um serviço `caddy` ao compose (imagem `caddy:2`, portas 80/443, montando o
-   `Caddyfile` e volumes de certificado) na mesma rede do `app`. Aí o `APP_PORT` deixa de
-   precisar ficar exposto publicamente.
+**Pré-requisitos:**
+1. Dois registros **A** apontando para o IP da VM, ex.: `loja.seudominio.com` e
+   `cdn.seudominio.com`.
+2. Abra **80** e **443** (Security List da VCN + iptables). Pode fechar a 9000 ao público
+   (o Caddy passa a servir as imagens via `cdn.seudominio.com`).
 
-> Me peça que eu gero o `Caddyfile` + serviço do compose prontos se você tiver um domínio.
+**No `.env`:**
+```
+APP_PORT=8080                    # evita conflito com a porta 80 do Caddy
+DOMAIN=loja.seudominio.com
+CDN_DOMAIN=cdn.seudominio.com
+```
+
+**Subir com TLS:**
+```bash
+docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d --build
+```
+
+Acesse `https://loja.seudominio.com`. As imagens são servidas por `https://cdn.seudominio.com`
+(o `Minio__PublicBaseUrl` já é ajustado automaticamente pelo override).
 
 ---
 

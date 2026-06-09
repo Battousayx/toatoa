@@ -1,0 +1,13 @@
+# HTTPS automático (Let's Encrypt). Os domínios vêm do .env (DOMAIN e CDN_DOMAIN)
+# e precisam ter registros A apontando para o IP da VM, com portas 80 e 443 abertas.
+
+{$DOMAIN} {
+    encode zstd gzip
+    reverse_proxy app:8080
+}
+
+# Subdomínio que serve as imagens do MinIO via HTTPS (evita mixed-content na loja).
+{$CDN_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy minio:9000
+}

@@ -1,0 +1,33 @@
+# Override para HTTPS com Caddy. Use junto com o compose base:
+#   docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d --build
+#
+# Pré-requisitos no .env: DOMAIN, CDN_DOMAIN e APP_PORT=8080 (para não conflitar
+# com a porta 80 do Caddy). DNS de DOMAIN e CDN_DOMAIN -> IP da VM; portas 80/443 abertas.
+
+services:
+  app:
+    environment:
+      # A loja é servida via HTTPS, então as imagens do MinIO também precisam ser HTTPS.
+      Minio__PublicBaseUrl: "https://${CDN_DOMAIN}"
+
+  caddy:
+    image: caddy:2
+    container_name: toatoa-caddy
+    depends_on:
+      - app
+      - minio
+    environment:
+      DOMAIN: "${DOMAIN}"
+      CDN_DOMAIN: "${CDN_DOMAIN}"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy-data:
+  caddy-config:
