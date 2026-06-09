@@ -61,9 +61,22 @@ dotnet run --no-launch-profile --urls "http://localhost:5099"
 > `export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`. A formatação de R$ é feita por
 > `MoneyHelper.Brl()` e funciona mesmo assim. (No container Docker a `libicu` já existe.)
 
+### Opção C — Produção (Oracle Cloud + Cloudflare)
+
+Deploy gratuito numa VM do **Oracle Cloud (Always Free)** com **Cloudflare** na frente
+fazendo o HTTPS. Passo a passo completo em **[`DEPLOY-ORACLE.md`](DEPLOY-ORACLE.md)**.
+
+Resumo (modo Cloudflare):
+```bash
+# .env: APP_PORT=8080, DOMAIN=seudominio.com, CDN_DOMAIN=cdn.seudominio.com
+docker compose -f docker-compose.yml -f docker-compose.cf.yml up -d --build
+```
+Caddy (HTTP) roteia `seudominio.com → app` e `cdn.seudominio.com → minio`; o Cloudflare
+(SSL/TLS = Flexible) provê o HTTPS. As imagens saem em `https://cdn...` (sem mixed-content).
+
 ### Acesso
-- Loja: http://localhost:5099/
-- Admin: http://localhost:5099/admin
+- Loja: http://localhost:5099/ (local) · `https://toatoafesta.com` (produção)
+- Admin: `/admin`
 - **Login admin:** `admin@toatoa.local` / `Admin@123` *(troque em produção!)*
 
 ## Configuração

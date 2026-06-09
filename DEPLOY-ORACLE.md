@@ -90,7 +90,45 @@ cd ~/toatoa && git pull && docker compose up -d --build
 
 ---
 
-## (Opcional) HTTPS com domínio — Caddy (já incluído)
+## HTTPS via Cloudflare (modo usado em produção — toatoafesta.com)
+
+Forma mais simples de ter HTTPS grátis: deixar o **Cloudflare** na frente fazendo o TLS, e
+um **Caddy em modo HTTP** na VM roteando por host (loja + imagens). Não precisa de
+certificado na VM. Arquivos: `Caddyfile.cf` + `docker-compose.cf.yml`.
+
+**1. DNS no Cloudflare** (zona do domínio), ambos **Proxied** (nuvem laranja):
+| Type | Name | Content |
+|------|------|---------|
+| A | `toatoafesta.com` | IP da VM |
+| A | `cdn` | IP da VM |
+
+**2. SSL/TLS → Overview → modo `Flexible`**
+> Navegador↔Cloudflare em HTTPS; Cloudflare↔VM em HTTP (porta 80). Sem isso dá erro de
+> SSL (525/ERR_SSL_VERSION), pois a VM não serve HTTPS direto.
+
+**3. `.env` na VM:**
+```
+PUBLIC_HOST=<IP-da-VM>
+APP_PORT=8080
+MINIO_USER=minioadmin
+MINIO_PASSWORD=troque-isto
+DOMAIN=toatoafesta.com
+CDN_DOMAIN=cdn.toatoafesta.com
+```
+
+**4. Subir:**
+```bash
+docker compose -f docker-compose.yml -f docker-compose.cf.yml up -d --build
+```
+
+O Caddy escuta na porta 80 e roteia: `toatoafesta.com → app:8080` e `cdn.toatoafesta.com →
+minio:9000`. O `Minio__PublicBaseUrl` vira `https://cdn.toatoafesta.com` automaticamente, então
+as imagens carregam em HTTPS (sem mixed-content). Firewall: basta **80** (e **22**) abertos;
+9000/9001 podem ficar fechados ao público (o acesso às imagens passa pelo Caddy/CDN).
+
+---
+
+## (Opcional) HTTPS com domínio próprio — Caddy + Let's Encrypt (sem Cloudflare)
 
 O repo já traz **`Caddyfile`** + **`docker-compose.tls.yml`** prontos. O Caddy emite
 certificados **Let's Encrypt automaticamente** e serve a loja e as imagens do MinIO em HTTPS
