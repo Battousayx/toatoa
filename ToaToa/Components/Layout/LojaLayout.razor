@@ -15,11 +15,13 @@
 
         <MudLink Href="/" Underline="Underline.None" Color="Color.Inherit">
             <div class="d-flex align-center" style="gap:12px;">
-                <MudImage Src="img/logo.png" Alt="Tôa Tôa Moda Festa" Height="48" Style="display:block;" />
-                <div style="width:1px; height:34px; background:#E7E1D6;"></div>
-                <div class="d-flex flex-column" style="line-height:1.05;">
-                    <MudText Typo="Typo.h6" Class="brand-title" Style="font-weight:700; letter-spacing:.14em; color:#3E5E50;">TÔA TÔA</MudText>
-                    <MudText Typo="Typo.caption" Style="letter-spacing:.28em; text-transform:uppercase; color:#BFA15A;">Moda Festa</MudText>
+                <MudImage Src="img/logo.png" Alt="Tôa Tôa Moda Festa" Height="44" Style="display:block;" />
+                <div class="d-none d-sm-flex align-center" style="gap:12px;">
+                    <div style="width:1px; height:34px; background:#E7E1D6;"></div>
+                    <div class="d-flex flex-column" style="line-height:1.05;">
+                        <MudText Typo="Typo.h6" Class="brand-title" Style="font-weight:700; letter-spacing:.14em; color:#3E5E50;">TÔA TÔA</MudText>
+                        <MudText Typo="Typo.caption" Style="letter-spacing:.28em; text-transform:uppercase; color:#BFA15A;">Moda Festa</MudText>
+                    </div>
                 </div>
             </div>
         </MudLink>
@@ -36,7 +38,7 @@
 
         <MudSpacer />
 
-        <MudIconButton Icon="@Icons.Material.Filled.Search" Color="Color.Inherit" Href="loja" />
+        <MudIconButton Icon="@Icons.Material.Filled.Search" Color="Color.Inherit" Href="loja" Class="d-none d-sm-inline-flex" />
         <MudIconButton Icon="@Icons.Material.Filled.PersonOutline" Color="Color.Inherit" Href="Account/Manage" />
         <MudBadge Content="@Cart.TotalItens" Color="Color.Secondary" Overlap="true" Visible="@(Cart.TotalItens > 0)">
             <MudIconButton Icon="@Icons.Material.Filled.ShoppingBag" Color="Color.Inherit" Href="carrinho" />

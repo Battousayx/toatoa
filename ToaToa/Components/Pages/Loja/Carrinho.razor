@@ -25,7 +25,7 @@
                     @foreach (var item in Cart.Itens)
                     {
                         <MudListItem T="CartItem">
-                            <div class="d-flex align-center gap-4 py-2">
+                            <div class="d-flex align-center gap-4 py-2 flex-wrap">
                                 @if (!string.IsNullOrEmpty(item.ImagemUrl))
                                 {
                                     <MudImage Src="@item.ImagemUrl" Width="80" Height="100" ObjectFit="ObjectFit.Cover" />
