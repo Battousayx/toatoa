@@ -53,7 +53,8 @@
 
                 @if (_variantes.Count > 0)
                 {
-                    <MudSelect T="int?" Label="Tamanho / Cor" @bind-Value="_varianteSelId" Variant="Variant.Outlined" Class="mb-4">
+                    <MudSelect T="int?" Label="Tamanho / Cor" @bind-Value="_varianteSelId" Variant="Variant.Outlined" Class="mb-4"
+                               ToStringFunc="@(id => _variantes.FirstOrDefault(x => x.Id == id) is {} va ? $"{va.Tamanho} / {va.Cor}" : string.Empty)">
                         @foreach (var va in _variantes)
                         {
                             <MudSelectItem T="int?" Value="va.Id" Disabled="@(va.EstoqueQtd <= 0)">

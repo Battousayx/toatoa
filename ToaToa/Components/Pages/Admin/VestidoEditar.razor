@@ -25,6 +25,7 @@ else
                     <MudTextField @bind-Value="_vestido.Descricao" Label="Descrição" Lines="4" Class="mt-3" />
                     <MudNumericField @bind-Value="_vestido.Preco" Label="Preço" Format="F2" Min="0" Class="mt-3" />
                     <MudSelect @bind-Value="_vestido.CategoriaId" Label="Categoria" Placeholder="Selecione a categoria"
+                               ToStringFunc="@(id => _categorias.FirstOrDefault(c => c.Id == id)?.Nome ?? string.Empty)"
                                Required="true" RequiredError="Selecione a categoria" Class="mt-3">
                         @foreach (var c in _categorias)
                         {

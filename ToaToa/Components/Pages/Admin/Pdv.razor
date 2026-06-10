@@ -27,7 +27,8 @@ else
             <MudPaper Class="pa-4" Elevation="2">
                 <MudText Typo="Typo.h6" Class="mb-3">Adicionar item</MudText>
 
-                <MudSelect T="int?" Label="Vestido" @bind-Value="_vestidoSelId" Dense="true">
+                <MudSelect T="int?" Label="Vestido" @bind-Value="_vestidoSelId" Dense="true"
+                           ToStringFunc="@(id => _vestidos.FirstOrDefault(v => v.Id == id) is {} v ? $"{v.Nome} — {v.Preco.Brl()}" : string.Empty)">
                     @foreach (var v in _vestidos)
                     {
                         <MudSelectItem T="int?" Value="v.Id">@v.Nome — @v.Preco.Brl()</MudSelectItem>
@@ -36,7 +37,8 @@ else
 
                 @if (VariantesDoSelecionado is { Count: > 0 } variantes)
                 {
-                    <MudSelect T="int?" Label="Variante" @bind-Value="_varianteSelId" Dense="true" Class="mt-3">
+                    <MudSelect T="int?" Label="Variante" @bind-Value="_varianteSelId" Dense="true" Class="mt-3"
+                               ToStringFunc="@(id => variantes.FirstOrDefault(x => x.Id == id) is {} va ? $"{va.Tamanho} / {va.Cor}" : string.Empty)">
                         @foreach (var va in variantes)
                         {
                             <MudSelectItem T="int?" Value="va.Id">@va.Tamanho / @va.Cor (estoque: @va.EstoqueQtd)</MudSelectItem>
