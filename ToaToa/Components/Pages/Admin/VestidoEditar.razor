@@ -24,10 +24,11 @@ else
                     <MudTextField @bind-Value="_vestido.Nome" Label="Nome" Required="true" RequiredError="Informe o nome" />
                     <MudTextField @bind-Value="_vestido.Descricao" Label="Descrição" Lines="4" Class="mt-3" />
                     <MudNumericField @bind-Value="_vestido.Preco" Label="Preço" Format="F2" Min="0" Class="mt-3" />
-                    <MudSelect @bind-Value="_vestido.CategoriaId" Label="Categoria" Required="true" RequiredError="Selecione a categoria" Class="mt-3">
+                    <MudSelect @bind-Value="_vestido.CategoriaId" Label="Categoria" Placeholder="Selecione a categoria"
+                               Required="true" RequiredError="Selecione a categoria" Class="mt-3">
                         @foreach (var c in _categorias)
                         {
-                            <MudSelectItem Value="c.Id">@c.Nome</MudSelectItem>
+                            <MudSelectItem T="int" Value="c.Id">@c.Nome</MudSelectItem>
                         }
                     </MudSelect>
                     <MudSwitch @bind-Value="_vestido.Ativo" Label="Ativo" Color="Color.Success" Class="mt-3" />
@@ -133,6 +134,9 @@ else
             _vestido = new Vestido { Ativo = true };
             _variantes = new();
             _fotos = new();
+            // pré-seleciona a primeira categoria para não exibir "0"
+            if (_categorias.Count > 0)
+                _vestido.CategoriaId = _categorias[0].Id;
         }
         _carregando = false;
     }

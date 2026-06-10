@@ -2,6 +2,7 @@
 @implements IDisposable
 @inject CartService Cart
 @inject NavigationManager Nav
+@inject ICategoriaService CategoriaService
 
 <MudThemeProvider Theme="ToaToa.Theme.ToaToaTheme.Theme" />
 <MudPopoverProvider />
@@ -31,9 +32,10 @@
         <div class="d-none d-md-flex">
             <MudButton Href="/" Color="Color.Inherit">Início</MudButton>
             <MudButton Href="loja" Color="Color.Inherit">Loja</MudButton>
-            <MudButton Href="loja?cat=festa" Color="Color.Inherit">Festa</MudButton>
-            <MudButton Href="loja?cat=casual" Color="Color.Inherit">Casual</MudButton>
-            <MudButton Href="loja?cat=praia" Color="Color.Inherit">Praia</MudButton>
+            @foreach (var c in _categorias)
+            {
+                <MudButton Href="@($"loja?cat={c.Slug}")" Color="Color.Inherit">@c.Nome</MudButton>
+            }
         </div>
 
         <MudSpacer />
@@ -49,9 +51,10 @@
         <MudNavMenu>
             <MudNavLink Href="/" Match="NavLinkMatch.All">Início</MudNavLink>
             <MudNavLink Href="loja" Match="NavLinkMatch.Prefix">Loja</MudNavLink>
-            <MudNavLink Href="loja?cat=festa">Festa</MudNavLink>
-            <MudNavLink Href="loja?cat=casual">Casual</MudNavLink>
-            <MudNavLink Href="loja?cat=praia">Praia</MudNavLink>
+            @foreach (var c in _categorias)
+            {
+                <MudNavLink Href="@($"loja?cat={c.Slug}")">@c.Nome</MudNavLink>
+            }
             <MudNavLink Href="carrinho">Carrinho</MudNavLink>
         </MudNavMenu>
     </MudDrawer>
@@ -113,8 +116,13 @@
 @code {
     private bool _drawerOpen;
     private string? _email;
+    private List<Categoria> _categorias = new();
 
-    protected override void OnInitialized() => Cart.OnChange += StateHasChanged;
+    protected override async Task OnInitializedAsync()
+    {
+        Cart.OnChange += StateHasChanged;
+        _categorias = await CategoriaService.ListarAsync();
+    }
 
     public void Dispose() => Cart.OnChange -= StateHasChanged;
 }
