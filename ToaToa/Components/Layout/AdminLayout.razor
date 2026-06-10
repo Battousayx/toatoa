@@ -32,6 +32,13 @@
             <MudNavLink Href="admin/vendas-do-dia" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.ReceiptLong">Vendas do dia</MudNavLink>
             <MudDivider Class="my-2" />
             <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Storefront">Ver loja</MudNavLink>
+            <form action="Account/Logout" method="post">
+                <AntiforgeryToken />
+                <input type="hidden" name="ReturnUrl" value="/" />
+                <button type="submit" class="mud-nav-link mud-ripple" style="width:100%; border:none; background:none; cursor:pointer; text-align:left;">
+                    <MudIcon Icon="@Icons.Material.Filled.Logout" Color="Color.Error" Class="mr-3" /> Sair
+                </button>
+            </form>
         </MudNavMenu>
     </MudDrawer>
 
