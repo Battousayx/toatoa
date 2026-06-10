@@ -44,10 +44,14 @@ public class CategoriaService(IDbContextFactory<CatalogoDbContext> factory) : IC
     {
         await using var db = await factory.CreateDbContextAsync();
         var c = await db.Categorias.FindAsync(id);
-        if (c is not null)
-        {
-            db.Categorias.Remove(c);
-            await db.SaveChangesAsync();
-        }
+        if (c is null)
+            return;
+
+        var qtdVestidos = await db.Vestidos.CountAsync(v => v.CategoriaId == id);
+        if (qtdVestidos > 0)
+            throw new InvalidOperationException($"Não é possível excluir: há {qtdVestidos} vestido(s) vinculado(s) a esta categoria. Mova ou exclua esses vestidos primeiro.");
+
+        db.Categorias.Remove(c);
+        await db.SaveChangesAsync();
     }
 }
