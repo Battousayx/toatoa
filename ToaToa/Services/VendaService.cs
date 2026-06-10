@@ -64,8 +64,7 @@ public class VendaService(IDbContextFactory<CatalogoDbContext> factory) : IVenda
 
     public async Task<List<Venda>> VendasDoDiaAsync(DateTime data)
     {
-        var inicio = data.Date;
-        var fim = inicio.AddDays(1);
+        var (inicio, fim) = StoreTime.DiaUtc(data);
 
         await using var db = await factory.CreateDbContextAsync();
         return await db.Vendas

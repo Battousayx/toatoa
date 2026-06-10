@@ -77,6 +77,8 @@ public class CatalogoDbContext(DbContextOptions<CatalogoDbContext> options) : Db
             e.Property(c => c.ValorAbertura).HasColumnType("decimal(18,2)");
             e.Property(c => c.ValorContado).HasColumnType("decimal(18,2)");
             e.Property(c => c.Diferenca).HasColumnType("decimal(18,2)");
+            // Garante no banco que só existe UM caixa aberto (Status = 0) por vez.
+            e.HasIndex(c => c.Status).IsUnique().HasFilter("Status = 0");
         });
 
         builder.Entity<MovimentoCaixa>(e =>

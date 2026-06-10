@@ -65,7 +65,7 @@ else
     {
         _qtdVestidos = (await VestidoService.ListarAsync()).Count;
         _qtdCategorias = (await CategoriaService.ListarAsync()).Count;
-        var vendas = await VendaService.VendasDoDiaAsync(DateTime.Now);
+        var vendas = await VendaService.VendasDoDiaAsync(StoreTime.Today);
         _qtdVendasHoje = vendas.Count;
         _totalHoje = vendas.Sum(v => v.Total);
         _caixaAberto = await CaixaService.ObterCaixaAbertoAsync() is not null;

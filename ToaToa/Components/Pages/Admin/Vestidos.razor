@@ -67,6 +67,10 @@
             Snackbar.Add("Vestido excluído.", Severity.Success);
             await Recarregar();
         }
+        catch (InvalidOperationException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+        }
         catch
         {
             Snackbar.Add("Não foi possível excluir o vestido.", Severity.Error);

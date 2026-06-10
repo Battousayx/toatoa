@@ -29,7 +29,7 @@ else
                     <MudText Typo="Typo.h6">Caixa aberto</MudText>
                     <MudChip T="string" Color="Color.Success">Aberto</MudChip>
                 </div>
-                <MudText Typo="Typo.body2" Class="mt-2">Abertura: @_caixa.DataAbertura.ToLocalTime()</MudText>
+                <MudText Typo="Typo.body2" Class="mt-2">Abertura: @StoreTime.ToLocal(_caixa.DataAbertura).ToString("dd/MM/yyyy HH:mm")</MudText>
                 <MudText Typo="Typo.body2">Fundo: @_caixa.ValorAbertura.Brl()</MudText>
 
                 <MudDivider Class="my-4" />

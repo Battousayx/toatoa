@@ -41,7 +41,7 @@ else
             <MudTh Style="text-align:right">Total</MudTh>
         </HeaderContent>
         <RowTemplate>
-            <MudTd DataLabel="Hora">@context.DataHora.ToLocalTime().ToString("HH:mm")</MudTd>
+            <MudTd DataLabel="Hora">@StoreTime.ToLocal(context.DataHora).ToString("HH:mm")</MudTd>
             <MudTd DataLabel="Itens">@context.Itens.Sum(i => i.Quantidade)</MudTd>
             <MudTd DataLabel="Forma">@context.FormaPagamento</MudTd>
             <MudTd DataLabel="Usuário">@context.Usuario</MudTd>
@@ -51,7 +51,7 @@ else
 }
 
 @code {
-    private DateTime? _data = DateTime.Today;
+    private DateTime? _data = StoreTime.Today;
     private List<Venda> _vendas = new();
     private bool _carregando = true;
 
@@ -66,7 +66,7 @@ else
     private async Task Recarregar()
     {
         _carregando = true;
-        _vendas = await VendaService.VendasDoDiaAsync(_data ?? DateTime.Today);
+        _vendas = await VendaService.VendasDoDiaAsync(_data ?? StoreTime.Today);
         _carregando = false;
     }
 

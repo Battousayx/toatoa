@@ -32,7 +32,7 @@ public class VestidoService(IDbContextFactory<CatalogoDbContext> factory) : IVes
         if (somenteAtivos)
             query = query.Where(v => v.Ativo);
 
-        return await query.OrderBy(v => v.Nome).ToListAsync();
+        return await query.OrderBy(v => v.Nome).AsSplitQuery().ToListAsync();
     }
 
     public async Task<Vestido?> ObterAsync(int id)
@@ -42,6 +42,7 @@ public class VestidoService(IDbContextFactory<CatalogoDbContext> factory) : IVes
             .Include(v => v.Variantes)
             .Include(v => v.Fotos)
             .Include(v => v.Categoria)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(v => v.Id == id);
     }
 
@@ -53,6 +54,7 @@ public class VestidoService(IDbContextFactory<CatalogoDbContext> factory) : IVes
             .Include(v => v.Variantes)
             .Include(v => v.Fotos)
             .Include(v => v.Categoria)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(v => v.Slug == slug);
     }
 
@@ -63,41 +65,72 @@ public class VestidoService(IDbContextFactory<CatalogoDbContext> factory) : IVes
 
         if (vestido.Id == 0)
         {
-            vestido.Variantes = variantes;
-            db.Vestidos.Add(vestido);
-        }
-        else
-        {
-            db.Vestidos.Update(vestido);
-
-            // Sincroniza variantes (remove as ausentes, adiciona/atualiza as demais)
-            var existentes = await db.Variantes.Where(v => v.VestidoId == vestido.Id).ToListAsync();
-            var idsMantidos = variantes.Where(v => v.Id != 0).Select(v => v.Id).ToHashSet();
-            db.Variantes.RemoveRange(existentes.Where(e => !idsMantidos.Contains(e.Id)));
-
-            foreach (var variante in variantes)
+            // Novo: anexa só os escalares + variantes (sem navegação de Categoria destacada).
+            vestido.Categoria = null;
+            vestido.Variantes = variantes.Select(v => new VarianteVestido
             {
-                variante.VestidoId = vestido.Id;
-                if (variante.Id == 0)
-                    db.Variantes.Add(variante);
-                else
-                    db.Variantes.Update(variante);
+                Tamanho = v.Tamanho, Cor = v.Cor, EstoqueQtd = v.EstoqueQtd, Sku = v.Sku
+            }).ToList();
+            db.Vestidos.Add(vestido);
+            await db.SaveChangesAsync();
+            return vestido;
+        }
+
+        // Edição: carrega a entidade RASTREADA e copia os campos (evita conflitos de tracking).
+        var atual = await db.Vestidos
+            .Include(v => v.Variantes)
+            .FirstOrDefaultAsync(v => v.Id == vestido.Id)
+            ?? throw new InvalidOperationException("Vestido não encontrado.");
+
+        atual.Nome = vestido.Nome;
+        atual.Slug = vestido.Slug;
+        atual.Descricao = vestido.Descricao;
+        atual.Preco = vestido.Preco;
+        atual.ImagemUrl = vestido.ImagemUrl;
+        atual.Ativo = vestido.Ativo;
+        atual.CategoriaId = vestido.CategoriaId;
+
+        // Sincroniza variantes: remove ausentes, atualiza existentes, insere novas.
+        var idsMantidos = variantes.Where(v => v.Id != 0).Select(v => v.Id).ToHashSet();
+        db.Variantes.RemoveRange(atual.Variantes.Where(e => !idsMantidos.Contains(e.Id)));
+
+        foreach (var nova in variantes)
+        {
+            var existente = nova.Id != 0 ? atual.Variantes.FirstOrDefault(e => e.Id == nova.Id) : null;
+            if (existente is null)
+            {
+                atual.Variantes.Add(new VarianteVestido
+                {
+                    Tamanho = nova.Tamanho, Cor = nova.Cor, EstoqueQtd = nova.EstoqueQtd, Sku = nova.Sku
+                });
+            }
+            else
+            {
+                existente.Tamanho = nova.Tamanho;
+                existente.Cor = nova.Cor;
+                existente.EstoqueQtd = nova.EstoqueQtd;
+                existente.Sku = nova.Sku;
             }
         }
 
         await db.SaveChangesAsync();
-        return vestido;
+        return atual;
     }
 
     public async Task ExcluirAsync(int id)
     {
         await using var db = await factory.CreateDbContextAsync();
-        var v = await db.Vestidos.FindAsync(id);
-        if (v is not null)
-        {
-            db.Vestidos.Remove(v);
-            await db.SaveChangesAsync();
-        }
+        var v = await db.Vestidos.Include(x => x.Variantes).FirstOrDefaultAsync(x => x.Id == id);
+        if (v is null)
+            return;
+
+        var varianteIds = v.Variantes.Select(va => va.Id).ToList();
+        var temVenda = await db.ItensVenda.AnyAsync(i => varianteIds.Contains(i.VarianteVestidoId));
+        if (temVenda)
+            throw new InvalidOperationException("Este vestido possui vendas registradas e não pode ser excluído. Desative-o (Ativo = não).");
+
+        db.Vestidos.Remove(v);
+        await db.SaveChangesAsync();
     }
 
     public async Task AdicionarFotoAsync(int vestidoId, string objectKey, string url)
